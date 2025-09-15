@@ -190,34 +190,22 @@ public protocol AsyncCommandProcessorPlugin {
 extension GooseCommand {
     /// Create a modified copy of the command with new arguments
     public func withArguments(_ newArguments: [String]) -> GooseCommand {
-        return GooseCommand(
-            id: self.id,
-            input: self.input,
-            arguments: newArguments,
-            timestamp: self.timestamp,
-            status: self.status
-        )
+        var copy = GooseCommand(command: self.command, arguments: newArguments)
+        copy.status = self.status
+        return copy
     }
     
     /// Create a modified copy of the command with additional arguments
     public func appendingArguments(_ additionalArguments: [String]) -> GooseCommand {
-        return GooseCommand(
-            id: self.id,
-            input: self.input,
-            arguments: self.arguments + additionalArguments,
-            timestamp: self.timestamp,
-            status: self.status
-        )
+        var copy = GooseCommand(command: self.command, arguments: self.arguments + additionalArguments)
+        copy.status = self.status
+        return copy
     }
     
-    /// Create a modified copy with a new input string
-    public func withInput(_ newInput: String) -> GooseCommand {
-        return GooseCommand(
-            id: self.id,
-            input: newInput,
-            arguments: self.arguments,
-            timestamp: self.timestamp,
-            status: self.status
-        )
+    /// Create a modified copy with a new command string
+    public func withCommand(_ newCommand: String) -> GooseCommand {
+        var copy = GooseCommand(command: newCommand, arguments: self.arguments)
+        copy.status = self.status
+        return copy
     }
 }
