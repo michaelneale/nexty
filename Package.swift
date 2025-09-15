@@ -24,8 +24,12 @@ let package = Package(
                 .product(name: "HotKey", package: "HotKey")
             ],
             path: "Goose/Goose",
+            exclude: [
+                "Info.plist",
+                "Goose.entitlements"
+            ],
             resources: [
-                .process("Resources"),
+                .process("Assets.xcassets"),
             ]
         ),
         .testTarget(
