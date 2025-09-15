@@ -11,6 +11,7 @@ import SwiftUI
 struct GooseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var spotlightManager = SpotlightWindowManager.shared
+    @State private var showMainWindow = false
     
     var body: some Scene {
         WindowGroup {
@@ -18,6 +19,14 @@ struct GooseApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
+        
+        WindowGroup("Command Center", id: "command-center") {
+            MainWindow()
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+        .defaultSize(width: 1000, height: 700)
+        
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Goose") {
@@ -31,6 +40,13 @@ struct GooseApp: App {
             }
             
             CommandGroup(after: .newItem) {
+                Button("Show Command Center") {
+                    self.openCommandCenter()
+                }
+                .keyboardShortcut("1", modifiers: [.command])
+                
+                Divider()
+                
                 Button("Show Spotlight") {
                     SpotlightWindowManager.shared.show(
                         mainWindowHandler: { command, output in
@@ -41,6 +57,19 @@ struct GooseApp: App {
                 }
                 .keyboardShortcut("K", modifiers: [.command])
             }
+        }
+    }
+    
+    private func openCommandCenter() {
+        // Focus the app and open command center window
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        // Open the Command Center window
+        if let commandCenterWindow = NSApplication.shared.windows.first(where: { $0.title == "Command Center" }) {
+            commandCenterWindow.makeKeyAndOrderFront(nil)
+        } else {
+            // Create new window by opening URL
+            NSWorkspace.shared.open(URL(string: "goose://command-center")!)
         }
     }
     
