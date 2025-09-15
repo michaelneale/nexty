@@ -32,13 +32,36 @@ struct GooseApp: App {
             
             CommandGroup(after: .newItem) {
                 Button("Show Spotlight") {
-                    showSpotlightWindow { command in
-                        print("Executing command: \(command)")
-                        // TODO: Execute actual Goose CLI command
-                    }
+                    SpotlightWindowManager.shared.show(
+                        mainWindowHandler: { command, output in
+                            // Open main window with command output
+                            self.openMainWindow(with: command, output: output)
+                        }
+                    )
                 }
                 .keyboardShortcut("K", modifiers: [.command])
             }
+        }
+    }
+    
+    private func openMainWindow(with command: GooseCommand, output: String) {
+        // Focus the app
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        // Find or create a window
+        if let window = NSApplication.shared.windows.first {
+            window.makeKeyAndOrderFront(nil)
+            
+            // TODO: Update ContentView to display the command and output
+            // This will be handled in ContentView
+            NotificationCenter.default.post(
+                name: Notification.Name("ShowCommandOutput"),
+                object: nil,
+                userInfo: [
+                    "command": command,
+                    "output": output
+                ]
+            )
         }
     }
 }
