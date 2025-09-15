@@ -23,6 +23,19 @@ struct ContentView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                 Spacer()
+                
+                Button(action: {
+                    showSpotlightWindow { command in
+                        executeCommand(command)
+                    }
+                }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Show Spotlight (⌘K)")
+                
                 if isRunning {
                     ProgressView()
                         .scaleEffect(0.7)
@@ -84,6 +97,10 @@ struct ContentView: View {
         let command = commandText
         commandText = ""
         
+        executeCommand(command)
+    }
+    
+    private func executeCommand(_ command: String) {
         output += "\n\n> \(command)\n"
         isRunning = true
         
