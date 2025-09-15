@@ -11,6 +11,7 @@ import SwiftUI
 struct GooseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var spotlightManager = SpotlightWindowManager.shared
+    @StateObject private var hotkeyManager = HotkeyManager.shared
     @State private var showMainWindow = false
     
     var body: some Scene {
@@ -26,6 +27,11 @@ struct GooseApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .defaultSize(width: 1000, height: 700)
+        
+        // Preferences Window
+        Settings {
+            HotkeyPreferencesView()
+        }
         
         .commands {
             CommandGroup(replacing: .appInfo) {
@@ -102,10 +108,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Initialize the spotlight window manager
         _ = SpotlightWindowManager.shared
+        
+        // Initialize the hotkey manager to register global hotkeys
+        _ = HotkeyManager.shared
+        
+        // Register notification handler for opening command center
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(openCommandCenter),
+            name: Notification.Name("OpenCommandCenter"),
+            object: nil
+        )
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         // Keep app running even when windows are closed (for hotkey activation)
         return false
+    }
+    
+    @objc private func openCommandCenter() {
+        // Focus the app and open command center window
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        // Open the Command Center window
+        if let commandCenterWindow = NSApplication.shared.windows.first(where: { $0.title == "Command Center" }) {
+            commandCenterWindow.makeKeyAndOrderFront(nil)
+        } else {
+            // Create new window by opening URL
+            NSWorkspace.shared.open(URL(string: "goose://command-center")!)
+        }
     }
 }
