@@ -26,6 +26,9 @@ class SpotlightWindowManager: ObservableObject {
     // Command handler callback
     private var commandHandler: ((String) -> Void)?
     
+    // Main window handler for long outputs
+    private var mainWindowHandler: ((GooseCommand, String) -> Void)?
+    
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
@@ -39,15 +42,17 @@ class SpotlightWindowManager: ObservableObject {
         spotlightWindow = SpotlightWindow()
         
         // Create the SwiftUI view - use Binding wrapper
-        let commandInputView = CommandInputView(
+        var commandInputView = CommandInputView(
             isVisible: Binding(
                 get: { self.isVisible },
                 set: { self.isVisible = $0 }
-            ),
-            onSubmit: { [weak self] command in
-                self?.handleCommand(command)
-            }
+            )
         )
+        
+        // Set up the main window handler
+        commandInputView.onOpenMainWindow = { [weak self] command, output in
+            self?.mainWindowHandler?(command, output)
+        }
         
         // Create hosting controller
         hostingController = NSHostingController(rootView: commandInputView)
@@ -77,8 +82,9 @@ class SpotlightWindowManager: ObservableObject {
     }
     
     /// Show the spotlight window
-    public func show(commandHandler: ((String) -> Void)? = nil) {
+    public func show(commandHandler: ((String) -> Void)? = nil, mainWindowHandler: ((GooseCommand, String) -> Void)? = nil) {
         self.commandHandler = commandHandler
+        self.mainWindowHandler = mainWindowHandler
         isVisible = true
     }
     

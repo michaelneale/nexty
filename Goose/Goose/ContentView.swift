@@ -6,11 +6,14 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @State private var commandText = ""
     @State private var output = "Welcome to Goose\nType a command and press Enter to execute."
     @State private var isRunning = false
+    @State private var commandHistory: [GooseCommand] = []
+    @State private var commandExecutor = CommandExecutor()
     
     var body: some View {
         VStack(spacing: 0) {
@@ -89,6 +92,13 @@ struct ContentView: View {
             .background(Color(NSColor.controlBackgroundColor))
         }
         .frame(minWidth: 600, minHeight: 400)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowCommandOutput"))) { notification in
+            if let command = notification.userInfo?["command"] as? GooseCommand,
+               let commandOutput = notification.userInfo?["output"] as? String {
+                output += "\n\n> \(command.fullCommand)\n\(commandOutput)"
+                commandHistory.append(command)
+            }
+        }
     }
     
     private func executeCommand() {
@@ -104,11 +114,31 @@ struct ContentView: View {
         output += "\n\n> \(command)\n"
         isRunning = true
         
-        // Placeholder for actual command execution
-        // This will be implemented to run goose CLI commands
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            output += "Command execution will be implemented in next task.\n"
-            isRunning = false
+        // Parse command
+        let components = command.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        let gooseCommand = GooseCommand(command: components.first ?? "", arguments: Array(components.dropFirst()))
+        commandHistory.append(gooseCommand)
+        
+        // Execute command
+        Task {
+            do {
+                try await commandExecutor.execute(command: gooseCommand) { [weak self] text, type in
+                    DispatchQueue.main.async {
+                        self?.output += text
+                    }
+                }
+                
+                await MainActor.run {
+                    self.isRunning = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.output += "\nError: \(error.localizedDescription)\n"
+                    self.isRunning = false
+                }
+            }
         }
     }
+    
+
 }
