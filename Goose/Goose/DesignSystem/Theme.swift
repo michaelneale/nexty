@@ -85,6 +85,15 @@ struct Theme {
         static let medium = ShadowStyle(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
         static let large = ShadowStyle(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
+    
+    // MARK: - Animation
+    struct Animation {
+        static let quick = SwiftUI.Animation.easeInOut(duration: 0.15)
+        static let standard = SwiftUI.Animation.easeInOut(duration: 0.25)
+        static let smooth = SwiftUI.Animation.easeInOut(duration: 0.35)
+        static let spring = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.8, blendDuration: 0)
+        static let bouncy = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)
+    }
 }
 
 // MARK: - Shadow Style
@@ -99,15 +108,6 @@ struct ShadowStyle {
         self.radius = radius
         self.x = x
         self.y = y
-    }
-    
-    // MARK: - Animation
-    struct Animation {
-        static let quick = SwiftUI.Animation.easeInOut(duration: 0.15)
-        static let standard = SwiftUI.Animation.easeInOut(duration: 0.25)
-        static let smooth = SwiftUI.Animation.easeInOut(duration: 0.35)
-        static let spring = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.8, blendDuration: 0)
-        static let bouncy = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)
     }
 }
 
