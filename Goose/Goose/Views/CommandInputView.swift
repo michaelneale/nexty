@@ -125,7 +125,7 @@ struct CommandInputView: View {
                 }
             }
         }
-        .background(VisualEffectBackground())
+        .background(VisualEffectBackground(material: .contentBackground, blendingMode: .behindWindow))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
