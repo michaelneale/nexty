@@ -188,7 +188,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.synchronize()
         
         // Save command history if needed
-        if let recentCommands = UserDefaults.standard.array(forKey: "RecentCommands") {
+        if UserDefaults.standard.array(forKey: "RecentCommands") != nil {
             // Already saved to UserDefaults
         }
         
