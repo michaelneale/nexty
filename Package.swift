@@ -15,13 +15,15 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/soffes/HotKey", from: "0.2.0")
+        .package(url: "https://github.com/soffes/HotKey", from: "0.2.0"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.0")
     ],
     targets: [
         .executableTarget(
             name: "Goose",
             dependencies: [
-                .product(name: "HotKey", package: "HotKey")
+                .product(name: "HotKey", package: "HotKey"),
+                .product(name: "Yams", package: "Yams")
             ],
             path: "Goose/Goose",
             exclude: [

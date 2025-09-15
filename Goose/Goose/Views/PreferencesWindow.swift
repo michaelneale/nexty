@@ -44,6 +44,12 @@ struct PreferencesWindow: View {
                     Label("Advanced", systemImage: "wrench.and.screwdriver")
                 }
                 .tag(3)
+            
+            ConfigYamlView()
+                .tabItem {
+                    Label("Goose Config", systemImage: "doc.text.fill")
+                }
+                .tag(4)
         }
         .frame(width: 600, height: 450)
         .navigationTitle("Preferences")
