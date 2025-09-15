@@ -1,0 +1,98 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-13
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: "5.9"
+        
+    - name: Build
+      run: swift build
+      
+    - name: Run tests
+      run: swift test --enable-code-coverage
+      
+    - name: Generate coverage report
+      run: |
+        xcrun llvm-cov export \
+          .build/debug/GoosePackageTests.xctest/Contents/MacOS/GoosePackageTests \
+          -instr-profile .build/debug/codecov/default.profdata \
+          -format="lcov" > coverage.lcov
+      continue-on-error: true
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.lcov
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  build-release:
+    name: Build Release
+    runs-on: macos-13
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: "5.9"
+        
+    - name: Build Release
+      run: swift build -c release
+      
+    - name: Archive build
+      run: |
+        mkdir -p artifacts
+        cp -r .build/release/Goose artifacts/
+        tar -czf artifacts/goose-macos.tar.gz -C artifacts Goose
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: goose-macos
+        path: artifacts/goose-macos.tar.gz
+        retention-days: 7
+
+  lint:
+    name: SwiftLint
+    runs-on: macos-13
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install SwiftLint
+      run: brew install swiftlint
+      
+    - name: Run SwiftLint
+      run: swiftlint --strict
+      continue-on-error: true
+      
+    - name: SwiftLint Report
+      run: swiftlint --reporter html > swiftlint.html
+      continue-on-error: true
+      
+    - name: Upload SwiftLint report
+      uses: actions/upload-artifact@v3
+      with:
+        name: swiftlint-report
+        path: swiftlint.html
+        retention-days: 7
