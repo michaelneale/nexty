@@ -26,7 +26,7 @@ public class PerformanceMonitor {
     private var cpuUsages: [Double] = []
     
     // Timing
-    private var displayLink: CADisplayLink?
+    private var fpsTimer: Timer?
     private var lastFrameTime: CFTimeInterval = 0
     
     // Thresholds
@@ -54,8 +54,8 @@ public class PerformanceMonitor {
     
     /// Stop monitoring performance metrics
     public func stopMonitoring() {
-        displayLink?.invalidate()
-        displayLink = nil
+        fpsTimer?.invalidate()
+        fpsTimer = nil
     }
     
     /// Get current FPS
@@ -162,14 +162,9 @@ public class PerformanceMonitor {
     // MARK: - Private Methods
     
     private func setupDisplayLink() {
-        if #available(macOS 14.0, *) {
-            displayLink = CADisplayLink(target: self, selector: #selector(updateFrameRate))
-            displayLink?.add(to: .main, forMode: .common)
-        } else {
-            // Fallback to timer-based FPS monitoring for older macOS versions
-            Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { _ in
-                self.updateFrameRateWithTimer()
-            }
+        // Use timer-based FPS monitoring for all macOS versions
+        fpsTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { _ in
+            self.updateFrameRateWithTimer()
         }
     }
     
@@ -182,27 +177,6 @@ public class PerformanceMonitor {
         
         let elapsed = now - lastFrameTime
         lastFrameTime = now
-        
-        let fps = 1.0 / elapsed
-        
-        metricsQueue.async {
-            self.frameRates.append(fps)
-            
-            // Keep only last 60 samples (1 second at 60fps)
-            if self.frameRates.count > 60 {
-                self.frameRates.removeFirst()
-            }
-        }
-    }
-    
-    @objc private func updateFrameRate(_ displayLink: CADisplayLink) {
-        if lastFrameTime == 0 {
-            lastFrameTime = displayLink.timestamp
-            return
-        }
-        
-        let elapsed = displayLink.timestamp - lastFrameTime
-        lastFrameTime = displayLink.timestamp
         
         let fps = 1.0 / elapsed
         
