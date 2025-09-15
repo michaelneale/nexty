@@ -35,7 +35,7 @@ jobs:
       continue-on-error: true
       
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.lcov
         flags: unittests
@@ -65,7 +65,7 @@ jobs:
         tar -czf artifacts/goose-macos.tar.gz -C artifacts Goose
         
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: goose-macos
         path: artifacts/goose-macos.tar.gz
@@ -91,7 +91,7 @@ jobs:
       continue-on-error: true
       
     - name: Upload SwiftLint report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: swiftlint-report
         path: swiftlint.html
