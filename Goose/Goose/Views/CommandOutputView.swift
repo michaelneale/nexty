@@ -20,6 +20,8 @@ struct CommandOutputView: View {
     @State private var isAutoScrollEnabled = true
     @State private var searchText = ""
     @State private var fontSize: CGFloat = 12
+    @StateObject private var bufferManager = OutputBufferManager()
+    @State private var backgroundProcessor: BackgroundOutputProcessor?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -121,25 +123,55 @@ struct CommandOutputView: View {
     }
     
     private var outputScrollView: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                FormattedOutputText(
-                    text: highlightedOutput,
-                    fontSize: fontSize
+        Group {
+            // Use virtual scrolling for large outputs (>10K lines)
+            if bufferManager.lineCount > 10000 {
+                VirtualScrollOutputView(
+                    bufferManager: bufferManager,
+                    fontSize: fontSize,
+                    searchText: searchText,
+                    isAutoScrollEnabled: isAutoScrollEnabled
                 )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .textSelection(.enabled)
-                .id("outputBottom")
-            }
-            .onChange(of: output) { _ in
-                if isAutoScrollEnabled && command.status == .running {
-                    withAnimation {
-                        proxy.scrollTo("outputBottom", anchor: .bottom)
+            } else {
+                // Use standard SwiftUI for smaller outputs
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        FormattedOutputText(
+                            text: highlightedOutput,
+                            fontSize: fontSize
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .textSelection(.enabled)
+                        .id("outputBottom")
+                    }
+                    .onChange(of: output) { _ in
+                        if isAutoScrollEnabled && command.status == .running {
+                            withAnimation {
+                                proxy.scrollTo("outputBottom", anchor: .bottom)
+                            }
+                        }
                     }
                 }
             }
         }
+        .onAppear {
+            setupOutputProcessing()
+        }
+        .onChange(of: output) { newOutput in
+            Task {
+                await processNewOutput(newOutput)
+            }
+        }
+    }
+    
+    private func setupOutputProcessing() {
+        backgroundProcessor = BackgroundOutputProcessor(bufferManager: bufferManager)
+    }
+    
+    private func processNewOutput(_ newOutput: String) async {
+        guard let processor = backgroundProcessor else { return }
+        await processor.processOutput(newOutput)
     }
     
     private var statusBar: some View {

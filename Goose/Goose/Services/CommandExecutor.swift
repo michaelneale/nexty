@@ -5,6 +5,8 @@ import Combine
 public class CommandExecutor: ObservableObject {
     private var runningProcesses: [UUID: Process] = [:]
     private let processQueue = DispatchQueue(label: "com.goose.commandexecutor", attributes: .concurrent)
+    private var outputBuffers: [UUID: OutputBufferManager] = [:]
+    private var outputProcessors: [UUID: BackgroundOutputProcessor] = [:]
     
     /// Execute a command asynchronously with streaming output
     public func execute(
