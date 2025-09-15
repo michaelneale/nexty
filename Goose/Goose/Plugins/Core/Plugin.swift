@@ -60,7 +60,7 @@ public protocol Plugin: AnyObject {
 }
 
 /// Represents the current state of a plugin
-public enum PluginState {
+public enum PluginState: Equatable {
     /// Plugin is loaded but not yet initialized
     case loaded
     
@@ -75,6 +75,22 @@ public enum PluginState {
     
     /// Plugin encountered an error
     case error(Error)
+    
+    public static func == (lhs: PluginState, rhs: PluginState) -> Bool {
+        switch (lhs, rhs) {
+        case (.loaded, .loaded),
+             (.initialized, .initialized),
+             (.active, .active),
+             (.inactive, .inactive):
+            return true
+        case (.error, .error):
+            // For simplicity, consider all errors equal
+            // In a real implementation, you might want to compare error details
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 /// Errors that can occur during plugin operations
