@@ -270,8 +270,7 @@ extension ContentView {
         Task {
             do {
                 try await commandExecutor.execute(command: gooseCommand) { text, type in
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self = self else { return }
+                    DispatchQueue.main.async {
                         withAnimation(Theme.Animation.quick) {
                             self.output += text
                         }
