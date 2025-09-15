@@ -186,8 +186,8 @@ struct CommandInputView: View {
     }
 }
 
-/// Visual effect background view for the blur/vibrancy effect
-struct VisualEffectBackground: NSViewRepresentable {
+/// Visual effect background view for the blur/vibrancy effect (command input specific)
+struct CommandInputVisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = .hudWindow

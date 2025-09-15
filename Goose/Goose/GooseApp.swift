@@ -12,11 +12,14 @@ struct GooseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var spotlightManager = SpotlightWindowManager.shared
     @StateObject private var hotkeyManager = HotkeyManager.shared
+    @StateObject private var notificationManager = NotificationManager()
     @State private var showMainWindow = false
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(notificationManager)
+                .withNotifications()
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))

@@ -39,6 +39,9 @@ class SpotlightWindow: NSPanel {
         
         // Animation behavior
         animationBehavior = .default
+        
+        // Add subtle vibrant background
+        appearance = NSAppearance(named: .vibrantDark)
     }
     
     override var canBecomeKey: Bool {
@@ -97,4 +100,143 @@ class SpotlightWindow: NSPanel {
         // Hide window when it loses key status (clicked outside)
         hideWindow()
     }
+}
+
+// MARK: - Spotlight View
+struct SpotlightView: View {
+    @Binding var searchText: String
+    let onSubmit: (String) -> Void
+    let onCancel: () -> Void
+    @State private var suggestions: [String] = []
+    @FocusState private var isFocused: Bool
+    @State private var pulseAnimation = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Theme.Spacing.medium) {
+                // Icon with pulse animation
+                Image(systemName: "magnifyingglass")
+                    .font(Theme.Typography.title3)
+                    .foregroundColor(Theme.Colors.primary)
+                    .scaleEffect(pulseAnimation ? 1.1 : 1.0)
+                    .animation(Theme.Animation.spring, value: pulseAnimation)
+                
+                // Search field
+                TextField("Type command...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(Theme.Typography.bodyMedium)
+                    .focused($isFocused)
+                    .onSubmit {
+                        if !searchText.isEmpty {
+                            onSubmit(searchText)
+                            searchText = ""
+                        }
+                    }
+                    .accessibilityLabel("Command search")
+                    .accessibilityHint("Type your command and press enter")
+                
+                // Keyboard shortcut hint
+                if searchText.isEmpty {
+                    Text("ESC to cancel")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText.opacity(0.5))
+                }
+                
+                // Clear button
+                if !searchText.isEmpty {
+                    Button(action: { searchText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(Theme.Typography.caption)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale.combined(with: .opacity))
+                    .accessibilityLabel("Clear search")
+                }
+            }
+            .padding(Theme.Spacing.large)
+            
+            // Suggestions (if needed in future)
+            if !suggestions.isEmpty {
+                Divider()
+                    .foregroundColor(Theme.Colors.divider)
+                
+                VStack(alignment: .leading, spacing: Theme.Spacing.xSmall) {
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        SuggestionRow(text: suggestion) {
+                            searchText = suggestion
+                            onSubmit(suggestion)
+                            searchText = ""
+                        }
+                    }
+                }
+                .padding(Theme.Spacing.medium)
+            }
+        }
+        .background(
+            VisualEffectBackground()
+        )
+        .cornerRadius(Theme.CornerRadius.large)
+        .shadow(color: Theme.Shadows.large.color, radius: Theme.Shadows.large.radius)
+        .onAppear {
+            isFocused = true
+            withAnimation(Theme.Animation.bouncy) {
+                pulseAnimation = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                pulseAnimation = false
+            }
+        }
+        .onExitCommand {
+            onCancel()
+        }
+    }
+}
+
+// MARK: - Suggestion Row
+struct SuggestionRow: View {
+    let text: String
+    let onTap: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                
+                Text(text)
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.primaryText)
+                
+                Spacer()
+            }
+            .padding(.horizontal, Theme.Spacing.small)
+            .padding(.vertical, Theme.Spacing.xSmall)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                    .fill(isHovered ? Theme.Colors.hover : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(Theme.Animation.quick) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Visual Effect Background
+struct VisualEffectBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .hudWindow
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
