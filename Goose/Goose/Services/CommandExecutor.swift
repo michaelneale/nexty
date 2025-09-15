@@ -44,7 +44,7 @@ public class CommandExecutor: ObservableObject {
             }
             
             // Clean up
-            processQueue.sync(flags: .barrier) {
+            _ = processQueue.sync(flags: .barrier) {
                 runningProcesses.removeValue(forKey: command.id)
             }
             
@@ -53,7 +53,7 @@ public class CommandExecutor: ObservableObject {
                 throw GooseCliError.executionFailed("Command exited with status \(process.terminationStatus)")
             }
         } catch {
-            processQueue.sync(flags: .barrier) {
+            _ = processQueue.sync(flags: .barrier) {
                 runningProcesses.removeValue(forKey: command.id)
             }
             

@@ -122,9 +122,9 @@ struct ContentView: View {
         // Execute command
         Task {
             do {
-                try await commandExecutor.execute(command: gooseCommand) { [weak self] text, type in
-                    DispatchQueue.main.async {
-                        self?.output += text
+                try await commandExecutor.execute(command: gooseCommand) { text, type in
+                    DispatchQueue.main.async { [self] in
+                        self.output += text
                     }
                 }
                 
