@@ -86,6 +86,7 @@ struct VirtualScrollOutputView: NSViewRepresentable {
             super.init()
         }
         
+        @MainActor
         func updateContent(searchText: String) {
             guard let textView = textView else { return }
             
@@ -93,10 +94,8 @@ struct VirtualScrollOutputView: NSViewRepresentable {
             let now = Date()
             
             // Check if we should throttle (only during streaming)
-            Task { @MainActor in
-                if now.timeIntervalSince(lastUpdateTime) < updateThrottle && bufferManager.isStreaming {
-                    return
-                }
+            if now.timeIntervalSince(lastUpdateTime) < updateThrottle && bufferManager.isStreaming {
+                return
             }
             
             lastUpdateTime = now

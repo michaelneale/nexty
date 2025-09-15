@@ -162,8 +162,37 @@ public class PerformanceMonitor {
     // MARK: - Private Methods
     
     private func setupDisplayLink() {
-        displayLink = CADisplayLink(target: self, selector: #selector(updateFrameRate))
-        displayLink?.add(to: .main, forMode: .common)
+        if #available(macOS 14.0, *) {
+            displayLink = CADisplayLink(target: self, selector: #selector(updateFrameRate))
+            displayLink?.add(to: .main, forMode: .common)
+        } else {
+            // Fallback to timer-based FPS monitoring for older macOS versions
+            Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { _ in
+                self.updateFrameRateWithTimer()
+            }
+        }
+    }
+    
+    private func updateFrameRateWithTimer() {
+        let now = CACurrentMediaTime()
+        if lastFrameTime == 0 {
+            lastFrameTime = now
+            return
+        }
+        
+        let elapsed = now - lastFrameTime
+        lastFrameTime = now
+        
+        let fps = 1.0 / elapsed
+        
+        metricsQueue.async {
+            self.frameRates.append(fps)
+            
+            // Keep only last 60 samples (1 second at 60fps)
+            if self.frameRates.count > 60 {
+                self.frameRates.removeFirst()
+            }
+        }
     }
     
     @objc private func updateFrameRate(_ displayLink: CADisplayLink) {
