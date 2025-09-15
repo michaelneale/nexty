@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a goose CLI command
-public struct GooseCommand: Identifiable, Codable, Equatable {
+public struct GooseCommand: Identifiable, Codable, Equatable, Hashable {
     public let id: UUID
     public let command: String
     public let arguments: [String]
