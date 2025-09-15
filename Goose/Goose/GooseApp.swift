@@ -12,7 +12,9 @@ struct GooseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var spotlightManager = SpotlightWindowManager.shared
     @StateObject private var hotkeyManager = HotkeyManager.shared
+    @StateObject private var menuBarManager = MenuBarManager.shared
     @State private var showMainWindow = false
+    @State private var showAboutWindow = false
     
     var body: some Scene {
         WindowGroup {
@@ -30,18 +32,21 @@ struct GooseApp: App {
         
         // Preferences Window
         Settings {
-            HotkeyPreferencesView()
+            PreferencesWindow()
         }
+        
+        // About Window
+        Window("About Goose", id: "about-window") {
+            AboutWindow()
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Goose") {
-                    NSApplication.shared.orderFrontStandardAboutPanel(
-                        options: [
-                            .applicationName: "Goose",
-                            .applicationVersion: "1.0.0"
-                        ]
-                    )
+                    showAboutWindow = true
+                    openAboutWindow()
                 }
             }
             
@@ -99,12 +104,24 @@ struct GooseApp: App {
             )
         }
     }
+    
+    private func openAboutWindow() {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        if let url = URL(string: "goose://about") {
+            NSWorkspace.shared.open(url)
+        }
+    }
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Set up any app-wide configurations
-        NSApplication.shared.setActivationPolicy(.regular)
+        let showInDock = UserDefaults.standard.bool(forKey: "ShowInDock")
+        NSApplication.shared.setActivationPolicy(showInDock ? .regular : .accessory)
+        
+        // Initialize the menu bar manager
+        _ = MenuBarManager.shared
         
         // Initialize the spotlight window manager
         _ = SpotlightWindowManager.shared
@@ -119,6 +136,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: Notification.Name("OpenCommandCenter"),
             object: nil
         )
+        
+        // Register notification handler for showing about window
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showAboutWindow),
+            name: Notification.Name("ShowAboutWindow"),
+            object: nil
+        )
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        // Perform cleanup
+        saveApplicationState()
+        
+        // Remove notification observers
+        NotificationCenter.default.removeObserver(self)
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -137,5 +170,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Create new window by opening URL
             NSWorkspace.shared.open(URL(string: "goose://command-center")!)
         }
+    }
+    
+    @objc private func showAboutWindow() {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        if let url = URL(string: "goose://about") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+    
+    private func saveApplicationState() {
+        // Save any pending state or preferences
+        UserDefaults.standard.synchronize()
+        
+        // Save command history if needed
+        if let recentCommands = UserDefaults.standard.array(forKey: "RecentCommands") {
+            // Already saved to UserDefaults
+        }
+        
+        // Log application termination if logging is enabled
+        if UserDefaults.standard.bool(forKey: "EnableLogging") {
+            logMessage("Application terminating", level: .info)
+        }
+    }
+    
+    private func logMessage(_ message: String, level: LogLevel) {
+        guard UserDefaults.standard.bool(forKey: "EnableLogging") else { return }
+        
+        let logPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Goose/Logs/app.log")
+        
+        guard let path = logPath else { return }
+        
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
+        let logEntry = "[\(timestamp)] [\(level.rawValue)] \(message)\n"
+        
+        if let data = logEntry.data(using: .utf8) {
+            if FileManager.default.fileExists(atPath: path.path) {
+                if let fileHandle = try? FileHandle(forWritingTo: path) {
+                    fileHandle.seekToEndOfFile()
+                    fileHandle.write(data)
+                    fileHandle.closeFile()
+                }
+            } else {
+                try? FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? data.write(to: path)
+            }
+        }
+    }
+    
+    enum LogLevel: String {
+        case debug = "DEBUG"
+        case info = "INFO"
+        case warning = "WARNING"
+        case error = "ERROR"
     }
 }
