@@ -14,93 +14,238 @@ struct ContentView: View {
     @State private var isRunning = false
     @State private var commandHistory: [GooseCommand] = []
     @State private var commandExecutor = CommandExecutor()
+    @State private var shakeAnimation: CGFloat = 0
+    @EnvironmentObject private var notificationManager: NotificationManager
     
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Image(systemName: "bird.fill")
-                    .font(.title2)
-                    .foregroundColor(.accentColor)
-                Text("Goose")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Spacer()
-                
-                Button(action: {
-                    showSpotlightWindow { command in
-                        executeCommand(command)
-                    }
-                }) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Show Spotlight (⌘K)")
-                
-                if isRunning {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                        .progressViewStyle(CircularProgressViewStyle())
+            HeaderView(isRunning: isRunning) {
+                showSpotlightWindow { command in
+                    executeCommand(command)
                 }
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
+                .foregroundColor(Theme.Colors.divider)
             
             // Output area
-            ScrollViewReader { proxy in
-                ScrollView {
-                    Text(output)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .textSelection(.enabled)
-                        .id("outputBottom")
-                }
-                .background(Color(NSColor.textBackgroundColor))
-                .onChange(of: output) { _ in
-                    withAnimation {
-                        proxy.scrollTo("outputBottom", anchor: .bottom)
-                    }
-                }
-            }
+            OutputArea(output: output, isEmpty: commandHistory.isEmpty)
             
             Divider()
+                .foregroundColor(Theme.Colors.divider)
             
             // Command input
-            HStack {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
-                TextField("Enter command...", text: $commandText)
-                    .textFieldStyle(.plain)
-                    .font(.system(.body, design: .monospaced))
-                    .onSubmit {
-                        executeCommand()
-                    }
-                    .disabled(isRunning)
-                
-                Button(action: executeCommand) {
-                    Image(systemName: "play.fill")
-                }
-                .buttonStyle(.borderless)
-                .disabled(commandText.isEmpty || isRunning)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            CommandInputArea(
+                commandText: $commandText,
+                isRunning: isRunning,
+                shakeAnimation: shakeAnimation,
+                onSubmit: executeCommand
+            )
         }
         .frame(minWidth: 600, minHeight: 400)
+        .background(Theme.Colors.background)
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowCommandOutput"))) { notification in
             if let command = notification.userInfo?["command"] as? GooseCommand,
                let commandOutput = notification.userInfo?["output"] as? String {
-                output += "\n\n> \(command.fullCommand)\n\(commandOutput)"
-                commandHistory.append(command)
+                withAnimation(Theme.Animation.smooth) {
+                    output += "\n\n> \(command.fullCommand)\n\(commandOutput)"
+                    commandHistory.append(command)
+                }
             }
         }
     }
+}
+
+// MARK: - Header View
+struct HeaderView: View {
+    let isRunning: Bool
+    let onSpotlight: () -> Void
+    @State private var isHoveringSpotlight = false
     
+    var body: some View {
+        HStack(spacing: Theme.Spacing.medium) {
+            HStack(spacing: Theme.Spacing.small) {
+                Image(systemName: "bird.fill")
+                    .font(Theme.Typography.title2)
+                    .foregroundColor(Theme.Colors.primary)
+                    .rotationEffect(.degrees(isRunning ? 360 : 0))
+                    .animation(isRunning ? Theme.Animation.smooth.repeatForever(autoreverses: false) : .default, value: isRunning)
+                
+                Text("Goose")
+                    .font(Theme.Typography.title2)
+                    .foregroundColor(Theme.Colors.primaryText)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Goose Application")
+            
+            Spacer()
+            
+            Button(action: onSpotlight) {
+                HStack(spacing: Theme.Spacing.xSmall) {
+                    Image(systemName: "magnifyingglass")
+                        .font(Theme.Typography.body)
+                    Text("⌘K")
+                        .font(Theme.Typography.caption)
+                        .opacity(isHoveringSpotlight ? 1 : 0.5)
+                }
+                .foregroundColor(Theme.Colors.secondaryText)
+                .padding(.horizontal, Theme.Spacing.small)
+                .padding(.vertical, Theme.Spacing.xSmall)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                        .fill(isHoveringSpotlight ? Theme.Colors.hover : Color.clear)
+                )
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                withAnimation(Theme.Animation.quick) {
+                    isHoveringSpotlight = hovering
+                }
+            }
+            .help("Show Spotlight (⌘K)")
+            .accessibilityLabel("Show Spotlight Window")
+            .accessibilityHint("Press to open the spotlight search window")
+            
+            if isRunning {
+                LoadingIndicator()
+            }
+        }
+        .padding(Theme.Spacing.large)
+        .background(Theme.Colors.secondaryBackground)
+    }
+}
+
+// MARK: - Loading Indicator
+struct LoadingIndicator: View {
+    @State private var rotation: Double = 0
+    
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.7)
+            .stroke(Theme.Colors.primary, lineWidth: 2)
+            .frame(width: 16, height: 16)
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                withAnimation(Theme.Animation.smooth.repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            }
+            .accessibilityLabel("Loading")
+            .accessibilityHint("Command is currently executing")
+    }
+}
+
+// MARK: - Output Area
+struct OutputArea: View {
+    let output: String
+    let isEmpty: Bool
+    @State private var scrollID = UUID()
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                if isEmpty {
+                    CommandEmptyStateView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(Theme.Spacing.xxLarge)
+                } else {
+                    Text(output)
+                        .font(Theme.Typography.code)
+                        .foregroundColor(Theme.Colors.terminalText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Theme.Spacing.large)
+                        .textSelection(.enabled)
+                        .id(scrollID)
+                        .accessibilityLabel("Command output")
+                        .accessibilityValue(output)
+                }
+            }
+            .background(Theme.Colors.tertiaryBackground)
+            .onChange(of: output) { _ in
+                withAnimation(Theme.Animation.smooth) {
+                    proxy.scrollTo(scrollID, anchor: .bottom)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Empty State View
+struct CommandEmptyStateView: View {
+    var body: some View {
+        VStack(spacing: Theme.Spacing.large) {
+            Image(systemName: "terminal.fill")
+                .font(.system(size: 48))
+                .foregroundColor(Theme.Colors.secondaryText.opacity(0.3))
+            
+            VStack(spacing: Theme.Spacing.small) {
+                Text("Ready to run commands")
+                    .font(Theme.Typography.title3)
+                    .foregroundColor(Theme.Colors.primaryText)
+                
+                Text("Type a command below or use ⌘K for spotlight")
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.secondaryText)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No commands run yet. Ready to accept commands.")
+    }
+}
+
+// MARK: - Command Input Area
+struct CommandInputArea: View {
+    @Binding var commandText: String
+    let isRunning: Bool
+    let shakeAnimation: CGFloat
+    let onSubmit: () -> Void
+    @FocusState private var isFocused: Bool
+    @State private var isHoveringButton = false
+    
+    var body: some View {
+        HStack(spacing: Theme.Spacing.medium) {
+            Image(systemName: "chevron.right")
+                .font(Theme.Typography.code)
+                .foregroundColor(Theme.Colors.terminalPrompt)
+                .accessibilityHidden(true)
+            
+            TextField("Enter command...", text: $commandText)
+                .textFieldStyle(.plain)
+                .font(Theme.Typography.code)
+                .foregroundColor(Theme.Colors.primaryText)
+                .focused($isFocused)
+                .onSubmit(onSubmit)
+                .disabled(isRunning)
+                .shake(animatableData: shakeAnimation)
+                .accessibilityLabel("Command input")
+                .accessibilityHint("Type your command here and press enter to execute")
+            
+            Button(action: onSubmit) {
+                Image(systemName: isRunning ? "stop.fill" : "play.fill")
+                    .font(Theme.Typography.body)
+                    .foregroundColor(commandText.isEmpty ? Theme.Colors.secondaryText : Theme.Colors.primary)
+                    .scaleEffect(isHoveringButton ? 1.1 : 1.0)
+            }
+            .buttonStyle(.plain)
+            .disabled(commandText.isEmpty && !isRunning)
+            .onHover { hovering in
+                withAnimation(Theme.Animation.quick) {
+                    isHoveringButton = hovering
+                }
+            }
+            .accessibilityLabel(isRunning ? "Stop command" : "Execute command")
+        }
+        .padding(Theme.Spacing.large)
+        .background(Theme.Colors.secondaryBackground)
+        .onAppear {
+            isFocused = true
+        }
+    }
+}
+
+// MARK: - ContentView Extension
+extension ContentView {
     private func executeCommand() {
         guard !commandText.isEmpty else { return }
         
@@ -111,7 +256,9 @@ struct ContentView: View {
     }
     
     private func executeCommand(_ command: String) {
-        output += "\n\n> \(command)\n"
+        withAnimation(Theme.Animation.quick) {
+            output += "\n\n> \(command)\n"
+        }
         isRunning = true
         
         // Parse command
@@ -123,22 +270,31 @@ struct ContentView: View {
         Task {
             do {
                 try await commandExecutor.execute(command: gooseCommand) { text, type in
-                    DispatchQueue.main.async { [self] in
-                        self.output += text
+                    DispatchQueue.main.async {
+                        withAnimation(Theme.Animation.quick) {
+                            self.output += text
+                        }
                     }
                 }
                 
                 await MainActor.run {
                     self.isRunning = false
+                    self.notificationManager.show(type: .success, title: "Command completed", message: nil)
                 }
             } catch {
                 await MainActor.run {
-                    self.output += "\nError: \(error.localizedDescription)\n"
+                    withAnimation(Theme.Animation.quick) {
+                        self.output += "\nError: \(error.localizedDescription)\n"
+                    }
                     self.isRunning = false
+                    self.notificationManager.show(type: .error, title: "Command failed", message: error.localizedDescription)
+                    
+                    // Shake animation on error
+                    withAnimation(Theme.Animation.quick) {
+                        self.shakeAnimation += 1
+                    }
                 }
             }
         }
     }
-    
-
 }
