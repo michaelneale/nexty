@@ -91,9 +91,14 @@ struct VirtualScrollOutputView: NSViewRepresentable {
             
             // Throttle updates for performance
             let now = Date()
-            if now.timeIntervalSince(lastUpdateTime) < updateThrottle && bufferManager.isStreaming {
-                return
+            
+            // Check if we should throttle (only during streaming)
+            Task { @MainActor in
+                if now.timeIntervalSince(lastUpdateTime) < updateThrottle && bufferManager.isStreaming {
+                    return
+                }
             }
+            
             lastUpdateTime = now
             
             // Get visible range
@@ -111,8 +116,8 @@ struct VirtualScrollOutputView: NSViewRepresentable {
             
             // Add buffer for smoother scrolling (fetch extra lines above and below)
             let bufferLines = 50
-            let startLine = max(0, getLineNumber(for: lineStart, in: text.string) - bufferLines)
-            let endLine = min(bufferManager.lineCount, getLineNumber(for: lineEnd, in: text.string) + bufferLines)
+            let startLine = max(0, getLineNumber(for: lineStart, in: textView.string) - bufferLines)
+            let endLine = min(bufferManager.lineCount, getLineNumber(for: lineEnd, in: textView.string) + bufferLines)
             
             // Fetch and update only the visible portion
             Task { @MainActor in
@@ -172,8 +177,8 @@ class VirtualTextView: NSTextView {
         if event.modifierFlags.contains(.command) {
             switch event.charactersIgnoringModifiers {
             case "c": // Copy
-                if let selectedRange = self.selectedRange(),
-                   selectedRange.length > 0 {
+                let selectedRange = self.selectedRange()
+                if selectedRange.length > 0 {
                     self.copy(nil)
                     return true
                 }
