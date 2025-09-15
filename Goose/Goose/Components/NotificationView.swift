@@ -68,12 +68,12 @@ struct NotificationView: View {
             
             VStack(alignment: .leading, spacing: Theme.Spacing.xSmall) {
                 Text(notification.title)
-                    .font(Theme.Typography.bodyMedium)
+                    .font(Theme.Typography.bodyEmphasized)
                     .foregroundColor(Theme.Colors.primaryText)
                 
                 if let message = notification.message {
                     Text(message)
-                        .font(Theme.Typography.caption)
+                        .font(Theme.Typography.caption1)
                         .foregroundColor(Theme.Colors.secondaryText)
                         .lineLimit(2)
                 }

@@ -124,7 +124,7 @@ struct SpotlightView: View {
                 // Search field
                 TextField("Type command...", text: $searchText)
                     .textFieldStyle(.plain)
-                    .font(Theme.Typography.bodyMedium)
+                    .font(Theme.Typography.bodyEmphasized)
                     .focused($isFocused)
                     .onSubmit {
                         if !searchText.isEmpty {
@@ -138,7 +138,7 @@ struct SpotlightView: View {
                 // Keyboard shortcut hint
                 if searchText.isEmpty {
                     Text("ESC to cancel")
-                        .font(Theme.Typography.caption)
+                        .font(Theme.Typography.caption1)
                         .foregroundColor(Theme.Colors.secondaryText.opacity(0.5))
                 }
                 
@@ -146,7 +146,7 @@ struct SpotlightView: View {
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(Theme.Typography.caption)
+                            .font(Theme.Typography.caption1)
                             .foregroundColor(Theme.Colors.secondaryText)
                     }
                     .buttonStyle(.plain)
@@ -174,7 +174,7 @@ struct SpotlightView: View {
             }
         }
         .background(
-            VisualEffectBackground()
+            VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
         )
         .cornerRadius(Theme.CornerRadius.large)
         .shadow(color: Theme.Shadows.large.color, radius: Theme.Shadows.large.radius)
@@ -203,7 +203,7 @@ struct SuggestionRow: View {
         Button(action: onTap) {
             HStack {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(Theme.Typography.caption)
+                    .font(Theme.Typography.caption1)
                     .foregroundColor(Theme.Colors.secondaryText)
                 
                 Text(text)
@@ -228,15 +228,4 @@ struct SuggestionRow: View {
     }
 }
 
-// MARK: - Visual Effect Background
-struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .hudWindow
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
+// Removed - using VisualEffectBackground from ViewModifiers.swift instead

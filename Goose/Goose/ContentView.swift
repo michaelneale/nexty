@@ -86,7 +86,7 @@ struct HeaderView: View {
                     Image(systemName: "magnifyingglass")
                         .font(Theme.Typography.body)
                     Text("⌘K")
-                        .font(Theme.Typography.caption)
+                        .font(Theme.Typography.caption1)
                         .opacity(isHoveringSpotlight ? 1 : 0.5)
                 }
                 .foregroundColor(Theme.Colors.secondaryText)
