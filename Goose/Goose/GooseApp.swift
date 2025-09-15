@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct GooseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var spotlightManager = SpotlightWindowManager.shared
     
     var body: some Scene {
         WindowGroup {
@@ -28,6 +29,16 @@ struct GooseApp: App {
                     )
                 }
             }
+            
+            CommandGroup(after: .newItem) {
+                Button("Show Spotlight") {
+                    showSpotlightWindow { command in
+                        print("Executing command: \(command)")
+                        // TODO: Execute actual Goose CLI command
+                    }
+                }
+                .keyboardShortcut("K", modifiers: [.command])
+            }
         }
     }
 }
@@ -36,6 +47,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Set up any app-wide configurations
         NSApplication.shared.setActivationPolicy(.regular)
+        
+        // Initialize the spotlight window manager
+        _ = SpotlightWindowManager.shared
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
