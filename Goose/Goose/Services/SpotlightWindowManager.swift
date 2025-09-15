@@ -29,6 +29,9 @@ class SpotlightWindowManager: ObservableObject {
     // Main window handler for long outputs
     private var mainWindowHandler: ((GooseCommand, String) -> Void)?
     
+    // Prefilled command for recent commands
+    private var prefilledCommand: String?
+    
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
@@ -82,9 +85,15 @@ class SpotlightWindowManager: ObservableObject {
     }
     
     /// Show the spotlight window
-    public func show(commandHandler: ((String) -> Void)? = nil, mainWindowHandler: ((GooseCommand, String) -> Void)? = nil) {
+    public func show(prefilledCommand: String? = nil, commandHandler: ((String) -> Void)? = nil, mainWindowHandler: ((GooseCommand, String) -> Void)? = nil) {
         self.commandHandler = commandHandler
         self.mainWindowHandler = mainWindowHandler
+        self.prefilledCommand = prefilledCommand
+        
+        // Update the command input view with prefilled command if available
+        // Note: This would need to be done through a different mechanism 
+        // since viewModel is private. For now, we'll store it for later use.
+        
         isVisible = true
     }
     
