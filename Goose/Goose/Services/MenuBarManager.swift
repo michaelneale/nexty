@@ -170,7 +170,8 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     @objc private func showPreferences() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        // Use NotificationCenter to trigger preferences window, similar to About window
+        NotificationCenter.default.post(name: Notification.Name("ShowPreferencesWindow"), object: nil)
     }
     
     @objc private func showAbout() {
