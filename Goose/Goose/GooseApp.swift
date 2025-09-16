@@ -147,6 +147,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: Notification.Name("ShowAboutWindow"),
             object: nil
         )
+        
+        // Register notification handler for showing preferences window
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showPreferencesWindow),
+            name: Notification.Name("ShowPreferencesWindow"),
+            object: nil
+        )
     }
     
     func applicationWillTerminate(_ notification: Notification) {
@@ -180,6 +188,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         if let url = URL(string: "goose://about") {
             NSWorkspace.shared.open(url)
+        }
+    }
+    
+    @objc private func showPreferencesWindow() {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        // Open the Settings window using the standard macOS preferences shortcut
+        if #available(macOS 13, *) {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        } else {
+            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
         }
     }
     
